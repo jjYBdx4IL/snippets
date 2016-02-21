@@ -5,4 +5,4 @@ you are doing, you are likely to blow up everything.
 
 --
 [![Build Status](https://travis-ci.org/jjYBdx4IL/snippets.png?branch=master)](https://travis-ci.org/jjYBdx4IL/snippets)
-github-snippets@6811
+github-snippets@6812
