@@ -1,3 +1,7 @@
+#!/bin/bash
+set -Eex
+set -o pipefail
+cd /var/lib/dpkg/info
 find . -name '*.list' -type f -cnewer openjdk-7-jre:amd64.list -printf '%P\n' | while read l; do
   l=${l%.list}
   apt-get -y remove ${l%:*}
