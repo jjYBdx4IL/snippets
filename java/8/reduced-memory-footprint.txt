@@ -1,0 +1,28 @@
+
+The GCTimeRatio flag basically tells the Oracle JVM whether to prefer throughput
+or low memory footprint:
+
+    -server -XX:+UseParallelGC -XX:GCTimeRatio=0
+
+Default is 99, meaning the JVM reduces GC runs such that they don't consume more
+than 1% of overall CPU usage. You might wanna try values in between, like 9. It's
+effectively telling the JVM the tradeoff between performance and low memory
+footprint. Don't use options to set maximum GC pauses as it complicates the
+situation and has precedence over footprint.
+
+You might also wanna try adding the following parameters, though they are not
+that critical:
+
+    -Xms16m -XX:MinHeapFreeRatio=2 -XX:MaxHeapFreeRatio=5
+
+For Netbeans I'm using:
+
+    -server -XX:+UseParallelGC -XX:GCTimeRatio=9 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=20
+
+With Oracle Java 7 you can achieve similar results by dropping the GCTimeRation parameter
+and using -XX:+UseSerialGC instead of the parallel one.
+
+All of these configuration settings actually make the JVM release memory back to
+the OS, though it's a bit tricky in certain situations because the GC does not seem
+to have a timed schedule, but rather runs in certain memory situations.
+
