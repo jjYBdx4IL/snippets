@@ -1,0 +1,7 @@
+/scratch/apt-archives
+/var/cache/apt/archives
+/home/mark/.m2/repository
+/root/.m2/repository
+/home/mark/.ccache
+/root/.ccache
+
