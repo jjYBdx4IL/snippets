@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# virsh variant script
+#
+
 sshfwdport=${SSHPORT:-5555}
 echo "WARNING! This script will install a VM image with minimum security!" >&2
 echo "You will be able to login into the VM on port $sshfwdport as root without any authentication!" >&2
@@ -18,27 +22,34 @@ maxwait=120
 imgsize=100G
 imgname="${isourl##*/}"
 imgname="${imgname%.*}"
+DOMNAME="maven-fullvirt-plugin-$sshfwdport"
 imgbasefile="$imgname.base.img"
 imgworkfile="$imgname.work.img"
 kvmpid=
-sharedFoldersArg=
+sharedFoldersXML=
 sharedFoldersMnt=()
 sharedFoldersTgt=()
-
+mac="00:12:3E:5D:C5:9E"
+keymap=${LANG%%_*}
+keymap=${keymap%%.*}
+virsh="virsh -c qemu:///session"
 
 function dl() {
+    local doneFile="${1##*/}.done"
     local arg2=""
     local arg3=""
     if which mvn; then
       if [[ -n "$2" ]]; then
         arg2="-Ddownload.outputFileName=$2"
+        doneFile="target/$2.done"
       fi
       if [[ -n "$3" ]]; then
         arg3="-Ddownload.sha256=$3"
       fi
-      if mvn -V -q -B com.googlecode.maven-download-plugin:download-maven-plugin:1.2.1:wget \
-        -Dproject.basedir=$(pwd) \
-        -Ddownload.url="$1" $arg2 $arg3 ; then return 0; fi
+      if test -e "$doneFile"; then return 0; fi
+      if mvn -q -B com.googlecode.maven-download-plugin:download-maven-plugin:1.2.1:wget \
+        -Dproject.basedir="$(pwd)" \
+        -Ddownload.url="$1" $arg2 $arg3 ; then touch "$doneFile"; return 0; fi
       return 1
     else
       if [[ -n "$2" ]]; then
@@ -55,6 +66,10 @@ function runcmd() {
         -o ServerAliveInterval=10 -o ServerAliveCountMax=3 \
 	-p $sshfwdport "$@" || return 1
     return 0
+}
+
+function waitoff() {
+	while $virsh domstate $DOMNAME; do sleep 3; done
 }
 
 function waitonline() {
@@ -166,21 +181,65 @@ update-grub
 EOF
 
 function stopvm() {
-	while ps -o cmd --ppid $$ -h | grep "^\(kvm\|qemu-system-\)"; do
-	    runcmd shutdown -h now || :
-	    sleep 5
-	done
-	trap - EXIT
+	$virsh shutdown $DOMNAME
+	waitoff
 }
 
 function startvm() {
-	local img="$1"
+	local diskImg="$(readlink -f "$1")"
 	shift
-	kvm -hda "$img" $kvmsmpspec $kvmnetspec -m $kvmram "$@" &
-	kvmpid=$!
-	trap "kill $kvmpid" EXIT
+#	kvm -hda "$img" $kvmsmpspec $kvmnetspec -m $kvmram "$@" &
+#	kvmpid=$!
+#	trap "kill $kvmpid" EXIT
+
+	cat > "$DOMNAME.xml" <<EOF
+<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <!-- https://libvirt.org/formatdomain.html -->
+  <name>$DOMNAME</name>
+  <title>$imgname</title>
+  <os>
+    <type>hvm</type>
+  </os>
+  <vcpu>4</vcpu>
+  <memory unit='MiB'>$kvmram</memory>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>destroy</on_reboot>
+  <on_crash>destroy</on_crash>
+  <on_lockfailure>poweroff</on_lockfailure>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='none'/>
+      <source file='$diskImg'/>
+      <target dev='hda'/>
+    </disk>
+    <graphics type='vnc' port='-1' keymap='$keymap'/>
+    <interface type='user'>
+	<model type='virtio'/>
+    </interface>
+    $sharedFoldersXML
+  </devices>
+  <qemu:commandline>
+    <qemu:arg value='-redir'/>
+    <qemu:arg value='tcp:$sshfwdport::22'/>
+  </qemu:commandline>
+</domain>
+EOF
+	cat "$DOMNAME.xml"
+
+	$virsh create "$DOMNAME.xml"
 	waitonline
 }
+
+function shutdown() {
+	$virsh shutdown $DOMNAME || :
+	waitoff
+}
+
+shutdown
 
 # -fsdev local,security_model=none,id=fsdev0,path=/scratch/apt-archives -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare-apt
 # mount -t 9p -o trans=virtio,version=9p2000.L,access=any,noatime "hostshare-$tag" /scratch/apt-archives
@@ -194,8 +253,9 @@ if test -e unattended_vm_install.shared_folders; then
 		if [[ -n "$srcdir" ]] && [[ ! -d "$srcdir" ]]; then install -d "$srcdir"; fi
 	elif [[ -z "$tgtdir" ]]; then
 		tgtdir="$l"
-		sharedFoldersArg="${sharedFoldersArg} -fsdev local,security_model=none,id=fsdev$devid,path=$srcdir -device virtio-9p-pci,id=fs$devid,fsdev=fsdev$devid,mount_tag=hostshare$devid"
-		sharedFoldersMnt[$devid]="mount -t 9p -o trans=virtio,version=9p2000.L,access=any,noatime hostshare$devid $tgtdir"
+		sharedFoldersXML="${sharedFoldersXML} <filesystem type='mount' accessmode='squash'><source dir='$srcdir'/><target dir='sharedfolder$devid'/></filesystem>"
+#-fsdev local,security_model=none,id=fsdev$devid,path=$srcdir -device virtio-9p-pci,id=fs$devid,fsdev=fsdev$devid,mount_tag=hostshare$devid"
+		sharedFoldersMnt[$devid]="mount -t 9p -o trans=virtio,version=9p2000.L,access=any,noatime sharedfolder$devid $tgtdir"
 		sharedFoldersTgt[$devid]="$tgtdir"
 		devid=$(( devid + 1 ))
               	srcdir=""
@@ -217,6 +277,57 @@ function setupSharedFolders() {
 	done
 }
 
+function installVM() {
+	local diskImg="$(readlink -f "$1")"
+	local isoImg="$(readlink -f "$2")"
+	local vmlinuzFile="$(readlink -f "$3")"
+	local initrdFile="$(readlink -f "$4")"
+	local cmdline="$5"
+	cat > "$DOMNAME.inst.xml" <<EOF
+<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <!-- https://libvirt.org/formatdomain.html -->
+  <name>$DOMNAME</name>
+  <title>$imgname</title>
+  <os>
+    <type>hvm</type>
+    <kernel>$vmlinuzFile</kernel>
+    <initrd>$initrdFile</initrd>
+    <cmdline>$cmdline</cmdline>
+  </os>
+  <memory unit='MiB'>$kvmram</memory>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>destroy</on_reboot>
+  <on_crash>destroy</on_crash>
+  <on_lockfailure>poweroff</on_lockfailure>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='none'/>
+      <source file='$diskImg'/>
+      <target dev='hda'/>
+    </disk>
+    <disk type='file' device='cdrom'>
+      <source  file='$isoImg'/>
+      <driver name='qemu' type='raw'/>
+      <target dev='hdc' bus='ide'/>
+      <readonly/>
+    </disk>
+    <graphics type='vnc' port='-1' keymap='$keymap'/>
+    <interface type='user'>
+	<model type='virtio'/>
+    </interface>
+  </devices>
+</domain>
+EOF
+	cat "$DOMNAME.inst.xml"
+
+	$virsh create "$DOMNAME.inst.xml"
+	waitoff
+}
+
 if ! test -e "$imgbasefile"; then
 	dl "$isourl" ubuntu15.iso
 	dl "$kernelurl/initrd.gz"
@@ -228,21 +339,22 @@ if ! test -e "$imgbasefile"; then
 	# raw 5:19, qed 5:29, vdi 5:04, qcow2 5:26
 	qemu-img create -f qcow2 "$imgbasefile.tmp" "$imgsize"
 
-	time kvm -hda "$imgbasefile.tmp" -cdrom target/ubuntu15.iso -kernel target/vmlinuz -initrd initrd.gz \
-	    $kvmnetspec -m $kvmram -append "ks=file:///ks.cfg"
+	installVM "$imgbasefile.tmp" target/ubuntu15.iso target/vmlinuz initrd.gz "ks=file:///ks.cfg"
+#	time kvm -hda "$imgbasefile.tmp" -cdrom target/ubuntu15.iso -kernel target/vmlinuz -initrd initrd.gz \
+#	    $kvmnetspec -m $kvmram -append "ks=file:///ks.cfg"
 
 	startvm "$imgbasefile.tmp"
 	stopvm
 
-	qemu-img convert -c -O qcow2 "$imgbasefile.tmp" "$imgbasefile.tmp2"
-	rm -f "$imgbasefile.tmp"
+#	qemu-img convert -c -O qcow2 "$imgbasefile.tmp" "$imgbasefile.tmp2"
+#	rm -f "$imgbasefile.tmp"
 	sync
-	mv -fv "$imgbasefile.tmp2" "$imgbasefile"
+	mv -fv "$imgbasefile.tmp" "$imgbasefile"
         rm -f initrd.gz
         rm -rf target
 fi
 rm -f ks.cfg
-
+#exit 1
 if test -e "$imgworkfile" && [[ "unattended_vm_install.build_deps" -nt "$imgworkfile" ]]; then
 	rm -f "$imgworkfile"
 fi
@@ -254,7 +366,7 @@ fi
 if ! test -e "$imgworkfile"; then
 	qemu-img create -f qcow2 -o backing_file="$imgbasefile" "$imgworkfile.tmp"
 
-	startvm "$imgworkfile.tmp" $sharedFoldersArg
+	startvm "$imgworkfile.tmp"
 	setupSharedFolders
 	runcmd apt-get update -qq
 	runcmd apt-get dist-upgrade -V -y
@@ -273,7 +385,7 @@ if [[ "x$VMRESET" == "xyes" ]] || [[ ! -e "$imgworkfile.tmp" ]]; then
 		qemu-img convert -f qcow2 -O raw "$imgworkfile" "$imgworkfile.tmp"
 	fi
 fi
-startvm "$imgworkfile.tmp" $sharedFoldersArg
+startvm "$imgworkfile.tmp"
 setupSharedFolders
 
 # start only?
