@@ -1,10 +1,19 @@
 #!/bin/bash
 
+sshfwdport=${SSHPORT:-5555}
+echo "WARNING! This script will install a VM image with minimum security!" >&2
+echo "You will be able to login into the VM on port $sshfwdport as root without any authentication!" >&2
+
+set -Eex
+set -o pipefail
+
+VMRESET=yes
+USESNAPSHOT=${USESNAPSHOT:-yes}
 kernelurl=http://archive.ubuntu.com/ubuntu/dists/wily/main/installer-amd64/current/images/cdrom/
 isourl=http://releases.ubuntu.com/15.10/ubuntu-15.10-server-amd64.iso
-sshfwdport=5555
 kvmnetspec="-device e1000,netdev=user.0 -netdev user,id=user.0,hostfwd=tcp::$sshfwdport-:22"
-kvmram=1024
+kvmsmpspec="-smp $(grep -c ^proc /proc/cpuinfo)"
+kvmram=${RAM:-2048}
 maxwait=120
 imgsize=100G
 imgname="${isourl##*/}"
@@ -16,11 +25,6 @@ sharedFoldersArg=
 sharedFoldersMnt=()
 sharedFoldersTgt=()
 
-echo "WARNING! This script will install a VM image with minimum security!" >&2
-echo "You will be able to login into the VM on port $sshfwdport as root without any authentication!" >&2
-
-set -Eex
-set -o pipefail
 
 function dl() {
     local arg2=""
@@ -54,9 +58,14 @@ function runcmd() {
 }
 
 function waitonline() {
+	local rhostname=
 	local started=$(date +%s)
         while (( $(date +%s) - started < maxwait )); do
-            	if runcmd true; then return 0; fi
+            	if runcmd true; then
+			rhostname=$(runcmd hostname)
+			if [[ "x$rhostname" == "xbuildvm" ]]; then return 0; fi
+                        return 1
+		fi
 		sleep 3
         done
 	return 1
@@ -141,6 +150,9 @@ skipx
 
 %post
 echo buildvm > /etc/hostname
+echo "127.0.1.2 buildvm" >> /etc/hosts
+sed -i /etc/apt/sources.list -e "s_^deb http\\S* wily_deb http://de.archive.ubuntu.com/ubuntu/ wily_"
+sed -i /etc/apt/sources.list -e "s_^deb-src http\\S* wily_deb-src http://de.archive.ubuntu.com/ubuntu/ wily_"
 apt-get install -y openssh-server vim
 sed -i /etc/ssh/sshd_config -e 's;^PermitRootLogin.*;PermitRootLogin yes;'
 sed -i /etc/ssh/sshd_config -e 's;^PermitEmptyPasswords.*;PermitEmptyPasswords yes;'
@@ -164,7 +176,7 @@ function stopvm() {
 function startvm() {
 	local img="$1"
 	shift
-	kvm -hda "$img" $kvmnetspec -m $kvmram "$@" &
+	kvm -hda "$img" $kvmsmpspec $kvmnetspec -m $kvmram "$@" &
 	kvmpid=$!
 	trap "kill $kvmpid" EXIT
 	waitonline
@@ -178,7 +190,8 @@ if test -e unattended_vm_install.shared_folders; then
     devid=0
     while read l; do
 	if [[ -z "$srcdir" ]]; then
-		srcdir="$l"
+		srcdir=$(eval "echo \"$l\"")
+		if [[ -n "$srcdir" ]] && [[ ! -d "$srcdir" ]]; then install -d "$srcdir"; fi
 	elif [[ -z "$tgtdir" ]]; then
 		tgtdir="$l"
 		sharedFoldersArg="${sharedFoldersArg} -fsdev local,security_model=none,id=fsdev$devid,path=$srcdir -device virtio-9p-pci,id=fs$devid,fsdev=fsdev$devid,mount_tag=hostshare$devid"
@@ -253,9 +266,19 @@ if ! test -e "$imgworkfile"; then
 	mv -fv "$imgworkfile.tmp" "$imgworkfile"
 fi
 
-qemu-img create -f qcow2 -o backing_file="$imgworkfile" "$imgworkfile.tmp"
+if [[ "x$VMRESET" == "xyes" ]] || [[ ! -e "$imgworkfile.tmp" ]]; then
+	if [[ "x$USESNAPSHOT" == "xyes" ]]; then
+		qemu-img create -f qcow2 -o backing_file="$imgworkfile" "$imgworkfile.tmp"
+	else
+		qemu-img convert -f qcow2 -O raw "$imgworkfile" "$imgworkfile.tmp"
+	fi
+fi
 startvm "$imgworkfile.tmp" $sharedFoldersArg
 setupSharedFolders
+
+# start only?
+if [[ "x$1" == "xstart" ]]; then trap - EXIT; exit 0; fi
+
 runcmd -t /bin/bash -l
 stopvm
 
