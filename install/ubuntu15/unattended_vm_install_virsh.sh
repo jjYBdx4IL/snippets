@@ -15,8 +15,7 @@ VMRESET=${VMRESET:-yes}
 USESNAPSHOT=${USESNAPSHOT:-yes}
 kernelurl=http://archive.ubuntu.com/ubuntu/dists/wily/main/installer-amd64/current/images/cdrom/
 isourl=http://releases.ubuntu.com/15.10/ubuntu-15.10-server-amd64.iso
-kvmnetspec="-device e1000,netdev=user.0 -netdev user,id=user.0,hostfwd=tcp::$sshfwdport-:22"
-kvmsmpspec="-smp $(grep -c ^proc /proc/cpuinfo)"
+nvcpus="$(grep -c ^proc /proc/cpuinfo)"
 kvmram=${RAM:-2048}
 maxwait=120
 imgsize=100G
@@ -25,11 +24,9 @@ imgname="${imgname%.*}"
 DOMNAME="maven-fullvirt-plugin-$sshfwdport"
 imgbasefile="$imgname.base.img"
 imgworkfile="$imgname.work.img"
-kvmpid=
 sharedFoldersXML=
 sharedFoldersMnt=()
 sharedFoldersTgt=()
-mac="00:12:3E:5D:C5:9E"
 keymap=${LANG%%_*}
 keymap=${keymap%%.*}
 virsh="virsh -c qemu:///session"
@@ -41,11 +38,12 @@ function dl() {
     if which mvn; then
       if [[ -n "$2" ]]; then
         arg2="-Ddownload.outputFileName=$2"
-        doneFile="target/$2.done"
+        doneFile="$2.done"
       fi
       if [[ -n "$3" ]]; then
         arg3="-Ddownload.sha256=$3"
       fi
+      doneFile="target/$doneFile"
       if test -e "$doneFile"; then return 0; fi
       if mvn -q -B com.googlecode.maven-download-plugin:download-maven-plugin:1.2.1:wget \
         -Dproject.basedir="$(pwd)" \
@@ -178,6 +176,8 @@ echo "GRUB_TERMINAL=console" >> /etc/default/grub
 echo "GRUB_TIMEOUT=1" >> /etc/default/grub
 echo "GRUB_CMDLINE_LINUX_DEFAULT=" >> /etc/default/grub
 update-grub
+sed -i /etc/fstab -e 's:errors=remount-ro:errors=remount-ro,discard,noatime:'
+fstrim /
 EOF
 
 function stopvm() {
@@ -200,7 +200,7 @@ function startvm() {
   <os>
     <type>hvm</type>
   </os>
-  <vcpu>4</vcpu>
+  <vcpu>$nvcpus</vcpu>
   <memory unit='MiB'>$kvmram</memory>
   <on_poweroff>destroy</on_poweroff>
   <on_reboot>destroy</on_reboot>
@@ -211,10 +211,16 @@ function startvm() {
     <apic/>
   </features>
   <devices>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2' cache='none'/>
+<!--<controller type='scsi' index='0' model='virtio-scsi'>
+  <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+</controller>-->
+<disk type='file' device='disk'>
+  
+<!--  <address type='drive' controller='0' bus='0' target='0' unit='0'/>-->
+
+      <driver name='qemu' type='qcow2' cache='none' discard='unmap'/>
       <source file='$diskImg'/>
-      <target dev='hda'/>
+      <target dev='sda' bus='scsi'/>
     </disk>
     <graphics type='vnc' port='-1' keymap='$keymap'/>
     <interface type='user'>
@@ -305,9 +311,9 @@ function installVM() {
   </features>
   <devices>
     <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2' cache='none'/>
+      <driver name='qemu' type='qcow2' cache='none' discard='unmap'/>
       <source file='$diskImg'/>
-      <target dev='hda'/>
+      <target dev='sda' bus='scsi'/>
     </disk>
     <disk type='file' device='cdrom'>
       <source  file='$isoImg'/>
@@ -391,6 +397,6 @@ setupSharedFolders
 # start only?
 if [[ "x$1" == "xstart" ]]; then trap - EXIT; exit 0; fi
 
-runcmd -t /bin/bash -l
+runcmd -t /bin/bash -l || :
 stopvm
 
