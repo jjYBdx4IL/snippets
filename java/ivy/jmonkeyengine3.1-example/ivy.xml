@@ -2,6 +2,6 @@
     <info organisation="org.apache" module="hello-ivy"/>
     <dependencies>
         <dependency org="commons-lang" name="commons-lang" rev="2.0"/>
-        <dependency org="commons-cli" name="commons-cli" rev="1.0"/>
+        <dependency org="com.github.jjYBdx4IL.chess" name="jcpi" rev="1.4.1.1"/>
     </dependencies>
 </ivy-module>

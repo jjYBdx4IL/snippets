@@ -85,6 +85,8 @@
             <fileset dir="${basedir}" includes="ivy.jar"/>
         </path>
         <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>        
-        <ivy:retrieve />
+        <ivy:retrieve pattern="lib/[artifact].[ext]" type="jar" />
+        <ivy:retrieve pattern="lib/src/[artifact].[ext]" type="src,source,sources" />
+        <ivy:retrieve pattern="lib/doc/[artifact].[ext]" type="doc,docs,javadoc,javadocs" />
     </target>    
 </project>
