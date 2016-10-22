@@ -1,1 +1,1 @@
-private static final ${LOG_TYPE type="org.slf4j.Logger" default="Logger" editable=false} log = ${LOG_FACT type="org.slf4j.LoggerFactory" default="LoggerFactory" editable=false}.getLogger(${CLASS editable="false" currClassName}.class);
+private static final ${LOG_TYPE type="org.slf4j.Logger" default="Logger" editable=false} LOG = ${LOG_FACT type="org.slf4j.LoggerFactory" default="LoggerFactory" editable=false}.getLogger(${CLASS editable="false" currClassName}.class);
