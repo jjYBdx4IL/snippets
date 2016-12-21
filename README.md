@@ -3,9 +3,7 @@ and have no safety checks built in, so if you don't *exactly* know what
 you are doing, you are likely to blow up everything.
 
 
+
+
 --
-[![Build Status](https://travis-ci.org/jjYBdx4IL/snippets.png?branch=master)](https://travis-ci.org/jjYBdx4IL/snippets)
-github-snippets@6815
---
-[![Build Status](https://travis-ci.org/jjYBdx4IL/snippets.png?branch=master)](https://travis-ci.org/jjYBdx4IL/snippets)
-github-snippets@7077
+devel/github-snippets@7188
