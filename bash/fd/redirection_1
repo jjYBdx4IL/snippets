@@ -1,0 +1,6 @@
+    exec 9<$PIDFILE
+# read first line
+    read pid <&9
+# read second line
+    read fullstr <&9
+    exec 9>&-
