@@ -1,0 +1,1 @@
+private static final ${LOG_TYPE type="java.util.logging.Logger" default="Logger" editable=false} LOG = ${LOG_TYPE type="java.util.logging.Logger" default="Logger" editable=false}.getLogger(${CLASS editable="false" currClassName}.class.getName());

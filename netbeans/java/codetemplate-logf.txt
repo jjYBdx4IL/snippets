@@ -1,0 +1,1 @@
+LOG.log(${levelType type="java.util.logging.Level" editable="false" default="Level"}.${logLevel default="FINE" completionInvoke}, "${message} {0}", ${param instanceof="java.lang.Object" default="arg"});
