@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<colorTheme id="12686" name="LikeDarcula" modified="2012-12-12 19:17:06" author="Edgar Trejo">
+    <searchResultIndication color="#000000" />
+    <filteredSearchResultIndication color="#000000" />
+    <occurrenceIndication color="#000000" />
+    <writeOccurrenceIndication color="#000000" />
+    <findScope color="#111111" />
+    <deletionIndication color="#D25252" />
+    <sourceHoverBackground color="#000000" />
+    <singleLineComment color="#808080" italic="false" />
+    <multiLineComment color="#619647" italic="false" />
+    <commentTaskTag color="#619647" italic="false" />
+    <javadoc color="#619647" italic="false" />
+    <javadocLink color="#619647" italic="false" />
+    <javadocTag color="#619647" italic="false" />
+    <javadocKeyword color="#619647" italic="false" />
+    <class color="#A9B7C6" bold="false" underline="false" strikethrough="false" />
+    <interface color="#A9B7C6" />
+    <method color="#A9B7C6" />
+    <methodDeclaration color="#FFC66D" />
+    <bracket color="#A9B7C6" />
+    <number color="#6897BB" />
+    <string color="#A5C25C" />
+    <operator color="#A9B7C6" />
+    <keyword color="#CB772F" bold="false" />
+    <annotation color="#A9B7C6" />
+    <staticMethod color="#BED6FF" />
+    <localVariable color="#A9B7C6" />
+    <localVariableDeclaration color="#A9B7C6" />
+    <field color="#9876AA" />
+    <staticField color="#9876AA" />
+    <staticFinalField color="#9876AA" italic="true" />
+    <deprecatedMember color="#D25252" underline="false" strikethrough="true" />
+    <enum color="#7FB347" />
+    <inheritedMethod color="#BED6FF" />
+    <abstractMethod color="#BED6FF" />
+    <parameterVariable color="#A9B7C6" />
+    <typeArgument color="#808080" />
+    <typeParameter color="#808080" />
+    <constant color="#9876AA" />
+    <background color="#2B2B2B" />
+    <currentLine color="#323232" />
+    <foreground color="#A9B7C6" />
+    <lineNumber color="#A9B7C6" />
+    <selectionBackground color="#214283" />
+    <selectionForeground color="#A9B7C6" />
+</colorTheme>
