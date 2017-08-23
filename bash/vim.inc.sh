@@ -1,3 +1,5 @@
+# vim:set syntax=bash et sw=4:
+
 _vim_summary() {
     cat <<EOF
 ## .vimrc
