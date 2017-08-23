@@ -1,5 +1,17 @@
 # vim:set syntax=bash et sw=4:
 
+_git_pull_all() {
+	local pwd=$(pwd)
+	for f in $pwd/*; do
+	    if ! test -d $f/.git; then continue; fi
+		echo -n "$f: "
+		cd $f
+		git pull
+	done
+	cd $pwd
+}
+
+
 _git_status_all() {
 	local okmd5="d158955c3de1219dbdee7368efbfd46c"
 	local md5=""
