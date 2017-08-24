@@ -6,7 +6,7 @@ _git_pull_all() {
 	    if ! test -d $f/.git; then continue; fi
 		echo -n "$f: "
 		cd $f
-		git pull
+		git pull --all
 	done
 	cd $pwd
 }
