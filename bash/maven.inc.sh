@@ -1,4 +1,4 @@
-# vim:set syntax=bash et sw=4:
+# vim:set syntax=sh et sw=4:
 
 _mvn_mk_src_dirs() {
 	mkdir -p src/{main,test}/{java,resources}
