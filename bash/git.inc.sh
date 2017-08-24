@@ -1,4 +1,4 @@
-# vim:set syntax=bash et sw=4:
+# vim:set syntax=sh et sw=4:
 
 _git_pull_all() {
 	local pwd=$(pwd)
@@ -20,7 +20,7 @@ _git_status_all() {
 	    if ! test -d $f/.git; then continue; fi
 		echo -n "$f: "
 		cd $f
-		md5=`git status 2>&1 | md5sum`
+		md5=`LC_ALL=C git status 2>&1 | md5sum`
 		md5=${md5%% *}
 		if [[ "$okmd5" != "$md5" ]]; then
 			echo
