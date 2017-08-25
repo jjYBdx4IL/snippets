@@ -25,8 +25,8 @@
     <keyword color="#E79E3C" bold="true" />
     <annotation color="#AFAFAF" bold="false" />
     <staticMethod color="#A4B0C0" bold="false" />
-    <localVariable color="#F8E1AA" bold="false" />
-    <localVariableDeclaration color="#F8E1AA" bold="false" />
+    <localVariable color="#D8C19A" bold="false" />
+    <localVariableDeclaration color="#B8B17A" bold="false" />
     <field color="#DE6546" bold="false" />
     <staticField color="#F8E1A3" bold="false" />
     <staticFinalField color="#F8E1A3" bold="false" />
