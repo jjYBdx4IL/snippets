@@ -27,7 +27,7 @@ _vim_summary() {
 # vim:set sw=4 ts=4 et ai smartindent fileformat=unix fileencoding=utf-8 syntax=sh:
 
 ## search and replace:
-:%s/host_name.*$/host_name mstier.de/g
+:%s/host_name.*$/host_name some.host.de/g
 
 ## color schemes:
 set color scheme with: :colo <name> where name is one of the following files:'

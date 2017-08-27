@@ -47,6 +47,11 @@ _git_summary ()
 { 
     cat  <<EOF
 
+log with file names
+===================
+
+git log --name-status
+
 create a "master" repository from another existing master repository
 ==================================================================
 
