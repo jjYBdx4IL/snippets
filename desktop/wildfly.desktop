@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=WildFly
+Comment=The Smarter Way to Code
+Exec=gnome-terminal --geometry=160x48 -e "./Downloads/wildfly/bin/standalone.sh -Dcms.devel=true -Denv.devel=true -Dhibernate.hbm2ddl.auto=update -Dhibernate.format_sql=true -Dhibernate.show_sql=true -Dhibernate.use_sql_comments=true"
+Icon=/work/opt/netbeans-8.2/nb/netbeans.png
+Categories=Application;Development;Java;IDE
+Version=1.0
+Type=Application
+Terminal=0
+Comment[de_DE]=

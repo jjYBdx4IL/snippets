@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=solr
+Comment=
+Exec=gnome-terminal --geometry=120x20 -e "./Downloads/solr/bin/solr start -f"
+Icon=/work/opt/netbeans-8.2/nb/netbeans.png
+Categories=Application;Development;Java;IDE
+Version=1.0
+Type=Application
+Terminal=0
+Comment[de_DE]=
