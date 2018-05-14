@@ -26,6 +26,9 @@ git status
 repoDir="$HOME/.m2/repository"
 repoUrl="file://$repoDir"
 
+# bump lwjgl version to latest bugfix release
+sed -i ./jme3-lwjgl3/build.gradle -e 's:3.1.2:3.1.6:'
+
 gradle --stop
 gradle clean
 gradle build javadocJar -x test

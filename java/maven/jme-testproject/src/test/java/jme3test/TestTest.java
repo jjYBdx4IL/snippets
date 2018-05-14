@@ -16,7 +16,7 @@ public class TestTest {
 
     @Test
     public void testTestLocalPhysics() {
-        runApp(new TestLocalPhysics(),4 );
+        runApp(new TestLocalPhysics(), 4);
     }
     
     @Test
@@ -31,10 +31,10 @@ public class TestTest {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                app.stop(true);
+                app.stop();
             }
         }, 5 * 1000);
 
-        app.start(false);
+        app.start();
     }
 }
