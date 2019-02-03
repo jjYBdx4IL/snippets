@@ -13,6 +13,7 @@ scriptDir="$(readlink -f "$(dirname "$0")")"
 
 jmeVersion=3.2.1-stable
 deployToRemote=0
+SKIP_BUILD=${SKIP_BUILD:+yes}
 
 if ! test -d jme; then
     git clone https://github.com/jMonkeyEngine/jmonkeyengine.git jme
@@ -21,6 +22,7 @@ fi
 pushd jme
 #git pull
 git checkout v$jmeVersion -f
+git clean -f
 git status
 
 repoDir="$HOME/.m2/repository"
@@ -29,9 +31,14 @@ repoUrl="file://$repoDir"
 # bump lwjgl version to latest bugfix release
 sed -i ./jme3-lwjgl3/build.gradle -e 's:3.1.2:3.1.6:'
 
-gradle --stop
-gradle clean
-gradle build javadocJar -x test
+# remove external repository dependence
+perl -0777 -i -pe 's/repositories.*?}.*?}//igs' jme3-niftygui/build.gradle
+
+if [[ -z "$SKIP_BUILD" ]]; then
+    gradle --stop
+    gradle clean
+    gradle build javadocJar -x test
+fi
 
 newVersion=3.2.1-SNAPSHOT # -SNAPSHOT for test releases
 deploymentPlugin=org.apache.maven.plugins:maven-deploy-plugin:2.8.2
@@ -62,6 +69,16 @@ retry() {
     return 0
 }
 
+# path conversion for running maven in cygwin environment
+pathcvt() {
+    echo "$@"
+}
+if which cygpath >&/dev/null; then
+    pathcvt() {
+        cygpath -w -m "$@"
+    }
+fi
+
 for pomFile in `find "$scriptDir" -name '*.pom'`; do
     libDir="$(dirname "$(dirname "$pomFile")")/libs"
     projectName="$(basename "$(dirname "$(dirname "$(dirname "$pomFile")")")")"
@@ -75,7 +92,7 @@ for pomFile in `find "$scriptDir" -name '*.pom'`; do
     classifiers=
     for classifier in tests; do
         if test -f $libDir/$projectName-$jmeVersion-$classifier.jar; then
-            files=$files${files:+,}$libDir/$projectName-$jmeVersion-$classifier.jar
+            files=$files${files:+,}$(pathcvt "$libDir/$projectName-$jmeVersion-$classifier.jar")
             types=$types${types:+,}jar
             classifiers=$classifiers${classifiers:+,}$classifier
         fi
@@ -87,17 +104,17 @@ for pomFile in `find "$scriptDir" -name '*.pom'`; do
     fi
     if (( deployToRemote )); then
         retry mvn $deploymentPlugin:sign-and-deploy-file -DrepositoryId=$repositoryId -Durl=$repoUrl -Dgpg.keyname=$keyname \
-            -DpomFile=$pomFile \
-            -Djavadoc=$libDir/$projectName-$jmeVersion-javadoc.jar \
-            -Dsources=$libDir/$projectName-$jmeVersion-sources.jar \
+            -DpomFile=$(pathcvt "$pomFile") \
+            -Djavadoc=$(pathcvt "$libDir/$projectName-$jmeVersion-javadoc.jar") \
+            -Dsources=$(pathcvt "$libDir/$projectName-$jmeVersion-sources.jar") \
             $files $types $classifiers \
-            -Dfile=$libDir/$projectName-$jmeVersion.jar
+            -Dfile=$(pathcvt "$libDir/$projectName-$jmeVersion.jar")
     else
         mvn install:install-file \
-            -DpomFile=$pomFile \
-            -Djavadoc=$libDir/$projectName-$jmeVersion-javadoc.jar \
-            -Dsources=$libDir/$projectName-$jmeVersion-sources.jar \
-            -Dfile=$libDir/$projectName-$jmeVersion.jar
+            -DpomFile=$(pathcvt "$pomFile") \
+            -Djavadoc=$(pathcvt "$libDir/$projectName-$jmeVersion-javadoc.jar") \
+            -Dsources=$(pathcvt "$libDir/$projectName-$jmeVersion-sources.jar") \
+            -Dfile=$(pathcvt "$libDir/$projectName-$jmeVersion.jar")
     fi        
 done
 popd

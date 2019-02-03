@@ -1,6 +1,7 @@
 package jme3test;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.system.AppSettings;
 import jme3test.bullet.TestLocalPhysics;
 import jme3test.terrain.TerrainTest;
 import org.junit.Test;
@@ -24,7 +25,10 @@ public class TestTest {
         runApp(new TerrainTest(), 4);
     }
 
-    public void runApp(final SimpleApplication app, int secs) {
+    public void runApp(final SimpleApplication app, final int secs) {
+        AppSettings appSettings = new AppSettings(true);
+        appSettings.setResizable(true);
+        app.setSettings(appSettings);
         app.setShowSettings(false);
 
         Timer timer = new Timer();
@@ -33,7 +37,7 @@ public class TestTest {
             public void run() {
                 app.stop();
             }
-        }, 5 * 1000);
+        }, secs * 1000L);
 
         app.start();
     }

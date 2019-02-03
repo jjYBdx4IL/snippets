@@ -4,6 +4,10 @@ _mvn_mk_src_dirs() {
 	mkdir -p src/{main,test}/{java,resources}
 }
 
+_mvn_fast() {
+    mvn -Ddependency-check.skip -DskipTests -DskipITs -Dmaven.javadoc.skip -Dcheckstyle.skip -Dlicense.skip -Denforcer.skip clean install "$@"
+}
+
 _mvn_summary () 
 { 
     cat  <<EOF
@@ -37,8 +41,10 @@ mvn help:effective-settings
 
 misc
 ====
+-Dmaven.repo.local=
 -Dmaven.javadoc.skip=true
 mkdir -p src/{main,test}/{java,resources}
+-Ddependency-check.skip -DskipTests -DskipITs -Dmaven.javadoc.skip -Dcheckstyle.skip -Dlicense.skip -Denforcer.skip
 
 delete locally built (not downloaded) packages from local repo
 ==============================================================

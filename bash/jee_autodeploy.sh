@@ -17,8 +17,8 @@
 #
 # JavaEE server instance must be running on the same host
 # as maven -- no archive upload is being performed, everything
-# is served in place from where "mvn install" is playing it
-# during build.
+# is served in place from where "mvn install" is placing it
+# during the build.
 #
 # Make sure your IDE copies updated resources to the maven build
 # directories. In eclipse, you can achieve this for src/main/webapp

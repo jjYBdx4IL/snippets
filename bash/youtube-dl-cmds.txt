@@ -1,0 +1,3 @@
+
+./youtube-dl -x --audio-format mp3 --audio-quality 112K --metadata-from-title "(?P<artist>.+?) - (?P<title>.+)" \
+  --add-metadata --embed-thumbnail --playlist-start "$@"
