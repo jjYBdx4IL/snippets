@@ -103,6 +103,10 @@ And recreate it
 $ git push origin master
 On github you should now set the default branch back to master
 
+delete a tag
+============
+git tag --delete 0.7.3
+git push origin :0.7.3
 EOF
 
 }

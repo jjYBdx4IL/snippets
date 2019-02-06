@@ -8,3 +8,8 @@ _svn_delete_missing_entries() {
     svn status | grep ^! | cut -d " " -f 8 | while read l; do svn delete $l; done
 }
 
+_svn_summary() {
+cat <<EOF
+svn export file:///path/to/local/repo [destdir]
+EOF
+}
