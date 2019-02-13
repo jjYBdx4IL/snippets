@@ -75,7 +75,12 @@ if [[ "$pubname" == "ROOT" ]]; then
 	ctxroot="/"
 fi
 
-if curl http://localhost:9990/ ; then
+port=4848
+if curl http://localhost:9991/ ; then
+    port=9991
+    iswildfly=1
+elif curl http://localhost:9990/ ; then
+    port=9990
     iswildfly=1
 fi
 
@@ -88,7 +93,7 @@ fi
 
 wildflycmd() {
 	local cmd=$1
-	curl --digest -L -u admin:admin -D - http://localhost:9990/management \
+	curl --digest -L -u admin:admin -D - http://localhost:$port/management \
 		--header "Content-Type: application/json" \
 		-d "$cmd"
 }
@@ -113,7 +118,7 @@ while inotifywait -e close_write -r $webappdir --excludei "\.(js|html|css)$" || 
 		-F virtualservers=server \
 		-F contextRoot=$ctxroot \
 		-F name=$pubname \
-		http://localhost:4848/management/domain/applications/application
+		http://localhost:$port/management/domain/applications/application
     else
         wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "redeploy", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
     fi
