@@ -50,6 +50,13 @@ delete locally built (not downloaded) packages from local repo
 ==============================================================
 find ~/.m2/repository -name maven-metadata-local.xml -printf '%h\n' | while read l; do rm -rfv "\$l"; done
 
+publish a release
+=================
+mvn release:prepare
+git push --all
+git push --tags
+mvn release:perform
+
 EOF
 
 }
