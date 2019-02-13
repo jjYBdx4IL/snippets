@@ -4,9 +4,12 @@
 #
 # Disclaimer: use at your own risk! Nothing is really free.
 #
-# Creates a local 'append only' mirror of a remote subersion repository.
+# Creates a local copy/backup of a remote subersion repository.
 # You might have to explicitly set up your remote repository using a somewhat
-# older storage format.
+# older storage format (3) in order to only get new files on commit and to not
+# change existing files. Rsync's --backup option is used to protect
+# a perfectly valid backup from getting irreversibly destroyed by bit rot on
+# the source side.
 #
 # Usage: manual_secure_svn_repo_backup.sh $targetDir
 #
@@ -29,41 +32,18 @@ backup() {
         return
     fi
     echo "$src -> $dst"
-    if ! test -d "$dst"; then
-        rsync -ai --exclude="/db/transactions/*" "$src/" "$dst"
-    fi
-    rsync -ai "$src/db/current" "$dst/db/."
-    if head -n1 "$dst/db/format" | grep "^6$"; then
-        rsync -ai "$src/db/rep-cache.db" "$dst/db/."
-        rsync -ai "$src/db/txn-current" "$dst/db/."
-    fi
-    rsync -ai --ignore-existing '--exclude=/db/transactions/*' "$src/" "$dst"
+    local bakdir=$(readlink -f "$dst.bak")
+    rsync -irlDc --del --backup "--backup-dir=$bakdir" --suffix=.bak-$(date +%Y%m%d-%H%M%S) "$src/" "$dst"
     sync
     echo 3 >/proc/sys/vm/drop_caches
     sync
     echo 3 >/proc/sys/vm/drop_caches
     sync
     echo "svnadmin verify..."
-    if ! head -n1 "$dst/db/format" | grep "^6$"; then
-        svnadmin verify $dst >&/dev/null
-    else
-        echo "svn repository format not supported" >&2
-        exit 2
-    fi
-    echo "verifying checksums..."
-    tmpf=$(mktemp)
-    trap "rm $tmpf" EXIT
-    rsync -ainc --del '--exclude=/db/transactions/*' "$src/" "$dst" 2>&1 | tee $tmpf
-    local tmpfsize=$(stat -c %s "$tmpf")
-    if (( tmpfsize > 0 )); then
-        cat "$tmpf"
-        exit 1
-    fi
-    rm $tmpf
-    trap - EXIT
+    svnadmin verify $dst >&/dev/null
 }
 
-tgtdir=$1
+tgtdir=${1%/}
 source $tgtdir.cfg
 if [[ -z "$rsyncSource" ]]; then
     echo "no rsyncSource configured for $tgtdir" >&2
