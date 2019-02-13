@@ -35,9 +35,10 @@ REGEX: if [[ \$a =~ :([0-9a-z]+) ]]; then echo \${BASH_REMATCH[1]}; fi
 
 #!/bin/bash
 # vim:set sw=4 ts=4 et ai smartindent fileformat=unix fileencoding=utf-8 syntax=sh:
+if [[ -n \$DEBUG ]]; then set -x; fi
 set -Eex ; set -o pipefail
-export LANG=C LC_ALL=C
-scriptdir=\$(readlink -f "\$(dirname "\$0")")
+export LANG=C LC_ALL=C TZ=UTC
+scriptdir=\$(dirname "\$(readlink -f "\$0")")
 cd \$scriptdir
 
 EOF
