@@ -54,6 +54,9 @@
 #        <!-- put compiled classes where jetty:run's auto-reload is looking for changes -->
 #        <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/classes</outputDirectory>
 #
+# If there is no `target/*-SNAPSHOT` file system entry, the current working directory will
+# be deployed.
+#
 
 set -x
 
@@ -67,7 +70,9 @@ if [[ -z "$usewar" ]]; then
 else
 	usewar=1
 fi
-webappdir=$(ls -d `pwd`/target/*-SNAPSHOT)
+if ! webappdir=$(ls -d `pwd`/target/*-SNAPSHOT); then
+    webappdir=$(pwd)
+fi
 iswildfly=0
 
 ctxroot="/$pubname"
