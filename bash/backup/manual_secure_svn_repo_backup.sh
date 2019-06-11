@@ -17,9 +17,9 @@
 #
 # ```
 # rsyncSource=root@your.host:/remote/path/to/svn/repos
+# gpgDestDir=/tmp (optional)
 # ```
 #
-
 
 set -Eex
 set -o pipefail
@@ -64,5 +64,13 @@ if ! ssh $hostpart svnadmin verify $pathpart >&/dev/null; then
 fi
 
 sync
+
+if [[ -n "$gpgDestDir" ]]; then
+    tar cf "$tgtdir.tgz" -I pigz -C "$tgtdir" .
+    gpg -v -e "$tgtdir.tgz"
+    chmod 644 "$tgtdir.tgz.gpg"
+    mv -v "$tgtdir.tgz.gpg" "$gpgDestDir/."
+    sync
+fi
 
 echo "All OK."
