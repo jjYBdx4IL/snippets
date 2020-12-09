@@ -21,7 +21,7 @@ fi
 for srcdir in "$@"; do
     srcdir=$(perl -e '$_=shift;s/\/+$//;print' "$srcdir")
     rsync -ai --del --exclude="**/target/" --exclude="**/.git/" --exclude="**/.svn/" \
-        --exclude="**/build/" --exclude=".*" "$srcdir" "$tgtdir/"
+        --exclude="**/build/" --exclude="**/bin/" --exclude=".*" "$srcdir" "$tgtdir/"
 done
 
 pushd $tgtdir

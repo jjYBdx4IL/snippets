@@ -107,6 +107,13 @@ delete a tag
 ============
 git tag --delete 0.7.3
 git push origin :0.7.3
+
+submodules
+==========
+
+git submodule update --init --recursive
+git submodule update --recursive --remote
+git clone --recursive https://...
 EOF
 
 }
