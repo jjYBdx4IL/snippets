@@ -135,6 +135,9 @@ my $trace = $ENV{TRACE};
 
 
 my $spooldir = "/var/spool/nagiosresdump";
+if (! -e $spooldir) {
+  mkdir $spooldir, 0700 or die $!;
+}
 die "cannot write to $spooldir" unless -d $spooldir;
 die "cannot write to $spooldir" unless -w $spooldir;
 
@@ -228,13 +231,18 @@ sub cronmode {
 sub submit {
     my ($dd) = @_;
     my $u = URI->new($cfg->{'cmdcgiurl'});
+    my $msg = $dd->{'msg'} eq "" ? "null" : $dd->{'msg'};
+    $msg =~ s/[\r\n\t]+/ /g;
+    if (length($msg) > 768) {
+	    $msg = substr($msg, 0, 768);
+    }
     $u->query_form({
         'cmd_typ' => 30,
         'cmd_mod' => 2,
         'host'    => $host,
         'service' => $dd->{'service'},
         'plugin_state'  => $dd->{'state'} ne "4" ? $dd->{'state'} : "",
-        'plugin_output' => $dd->{'msg'},
+        'plugin_output' => $msg,
         'performance_data' => "",
         'btnSubmit'     => "Commit",
     });

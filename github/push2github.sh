@@ -88,7 +88,7 @@ if [[ "$diffonly" == "no" ]]; then
     echo "All OK." >&2
 else
     git status
-    echo "won't commit because your svn workdir is not clean" >&2
+    echo "won't commit because your svn workdir is not clean (env var FORCE=1 to override)" >&2
 fi
 popd
 

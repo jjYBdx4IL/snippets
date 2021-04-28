@@ -35,9 +35,9 @@ backup() {
     local bakdir=$(readlink -f "$dst.bak")
     rsync -irlDc --del --backup "--backup-dir=$bakdir" --suffix=.bak-$(date +%Y%m%d-%H%M%S) "$src/" "$dst"
     sync
-    echo 3 >/proc/sys/vm/drop_caches
+    echo 3 >/proc/sys/vm/drop_caches || sudo flush_cache
     sync
-    echo 3 >/proc/sys/vm/drop_caches
+    echo 3 >/proc/sys/vm/drop_caches || :
     sync
     echo "svnadmin verify..."
     svnadmin verify $dst >&/dev/null
@@ -57,20 +57,15 @@ pathpart=${rsyncSource#*:}
 if [[ "$hostpart:$pathpart" != "$rsyncSource" ]]; then
     exit 4
 fi
-if ! ssh $hostpart svnadmin verify $pathpart >&/dev/null; then
-    echo "remote repo verify failed" >&2
-    read
-    exit 1
-fi
 
-sync
-
-if [[ -n "$gpgDestDir" ]]; then
-    tar cf "$tgtdir.tgz" -I pigz -C "$tgtdir" .
-    gpg -v -e "$tgtdir.tgz"
-    chmod 644 "$tgtdir.tgz.gpg"
-    mv -v "$tgtdir.tgz.gpg" "$gpgDestDir/."
-    sync
-fi
+#sync
+#
+#if [[ -n "$gpgDestDir" ]]; then
+#    tar cf "$tgtdir.tgz" -I pigz -C "$tgtdir" .
+#    gpg -v -e "$tgtdir.tgz"
+#    chmod 644 "$tgtdir.tgz.gpg"
+#    mv -v "$tgtdir.tgz.gpg" "$gpgDestDir/."
+#    sync
+#fi
 
 echo "All OK."
