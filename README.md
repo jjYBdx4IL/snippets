@@ -8,4 +8,4 @@ you are doing, you are likely to blow up everything.
 
 
 --
-devel/java/github/snippets@7833
+devel/java/github/snippets@7838
