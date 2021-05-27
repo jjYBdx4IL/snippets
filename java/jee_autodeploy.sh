@@ -98,21 +98,33 @@ fi
 
 wildflycmd() {
 	local cmd=$1
-	curl --digest -L -u admin:admin -D - http://localhost:$port/management \
+	curl --retry 100 --retry-delay 3 --retry-connrefused --digest -L -u admin:admin -D - http://localhost:$port/management \
 		--header "Content-Type: application/json" \
 		-d "$cmd"
 }
 
+if [[ "$(uname)" =~ ^CYGWIN ]]; then
+	webappdir="$(cygpath -w "$webappdir")"
+	webappdir="${webappdir//\\//\\\\}"
+fi
+
 if (( iswildfly )); then
 	wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "undeploy", "address" : {"deployment" : "'$pubname'.war"}},{"operation" : "remove", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
+
     if (( usewar )); then
-	wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "add", "address" : {"deployment" : "'$pubname'.war"}, "content" : [{"url" : "file:'$webappdir'"}]},{"operation" : "deploy", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
+		wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "add", "address" : {"deployment" : "'$pubname'.war"}, "content" : [{"url" : "file:'$webappdir'"}]},{"operation" : "deploy", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
     else
-	wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "add", "address" : {"deployment" : "'$pubname'.war"}, "content" : [{"path" : "'$webappdir'", "archive":"false"}]},{"operation" : "deploy", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
+		wildflycmd '{"operation" : "composite", "address" : [], "steps" : [{"operation" : "add", "address" : {"deployment" : "'$pubname'.war"}, "content" : [{"path" : "'$webappdir'", "archive":"false"}]},{"operation" : "deploy", "address" : {"deployment" : "'$pubname'.war"}}],"json.pretty":1}'
     fi
 fi
 
-while inotifywait -e close_write -r $webappdir --excludei "\.(js|html|css)$" || :; do
+inotifyEvents=""
+if ! [[ "$(uname)" =~ ^CYGWIN ]]; then
+	inotifyEvents="-e close_write"
+fi
+
+#while inotifywait $inotifyEvents -r $webappdir --excludei "\.(js|html|css)$" || :; do
+while inotifywait $inotifyEvents -r "$webappdir/WEB-INF/classes" || :; do
     if ! (( iswildfly )); then
     	curl -v -H 'Accept: application/json' \
 		-X POST \
