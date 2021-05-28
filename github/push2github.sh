@@ -63,7 +63,7 @@ echo >> README.md
 echo >> README.md
 echo "--" >> README.md
 if test -e .travis.yml; then
-  echo "[![Build Status](https://travis-ci.org/$relgitpath.png?branch=$GITBRANCH)](https://travis-ci.org/$relgitpath)" >> README.md
+  echo "[![Build Status](https://travis-ci.com/$relgitpath.png?branch=$GITBRANCH)](https://travis-ci.org/$relgitpath)" >> README.md
 fi
 echo "$svnpath@$svnrev$isdirty" >> README.md
 
